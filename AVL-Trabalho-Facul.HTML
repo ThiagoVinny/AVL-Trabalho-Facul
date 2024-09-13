@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Simulador de Árvores-AVL</title>
+    <style>
+        *{
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .btn {
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        .btn[disabled] {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+        }
+
+        .ui-slider {
+            position: relative;
+            height: 10px;
+            background: #ddd;
+            border-radius: 5px;
+        }
+
+        .ui-slider-handle {
+            position: absolute;
+            top: -5px;
+            width: 10px;
+            height: 20px;
+            background: #007bff;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: left 0.3s;
+        }
+
+        canvas {
+            border-radius: 10px;
+            background-color: #fff;
+            border: 1px solid black;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body onload="init();" class="VisualizationMainPage" style="display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: #000;" >
+    <div id="container">
+        <div id="header" style="color: #fff;">
+            <h1>Simulação de Árvore AVL</h1>
+        </div>
+
+        <div id="mainContent">
+            <div id="algoControlSection">
+                <table id="AlgorithmSpecificControls">
+                    <tr>
+                        <td><input type="text" id="inputValue" class="btn" title="Escreva aqui o valor que deseja inserir, excluir ou achar."></td>
+                        <td><input type="button" value="INSERIR" id="insertButton" class="btn" title="Insere o valor fornecido, rebalanceando."></td>
+                        <td><input type="button" value="EXCLUIR" id="deleteButton" class="btn" title="Exclui o valor fornecido, rebalanceando."></td>
+                        <td><input type="button" value="ACHAR" id="findButton" class="btn" title="Acha o valor fornecido."></td>
+                        <td><input type="button" value="PERCORRER INORDEM" id="traverseButton" class="btn" title="Percorre toda a árvore usando o algoritmo INORDEM, imprimindo os valores dos nodos ao lado."></td>
+                    </tr>
+                </table>
+            </div>
+
+            <canvas id="canvas" width="1200" height="500"></canvas>
+
+            <div id="generalAnimationControlSection">
+                
+            </div>
+        </div> <!-- mainContent -->
+    </div><!-- container -->
+    <footer style="color: #fff;">
+        Grupo: Décio Carvalho Faria, Leandro Dias Silva, Paulo Souza Telles Filho e Thiago Vinny Horta França Menezes
+    </footer>
+    <script>
+        // AVL Tree Node
+        class Node {
+            constructor(value) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+                this.height = 1;
+            }
+        }
+
+        class AVLTree {
+            constructor() {
+                this.root = null;
+            }
+
+            height(N) {
+                if (N === null)
+                    return 0;
+                return N.height;
+            }
+
+            rightRotate(y) {
+                let x = y.left;
+                let T2 = x.right;
+
+                x.right = y;
+                y.left = T2;
+
+                y.height = Math.max(this.height(y.left), this.height(y.right)) + 1;
+                x.height = Math.max(this.height(x.left), this.height(x.right)) + 1;
+
+                return x;
+            }
+
+            leftRotate(x) {
+                let y = x.right;
+                let T2 = y.left;
+
+                y.left = x;
+                x.right = T2;
+
+                x.height = Math.max(this.height(x.left), this.height(x.right)) + 1;
+                y.height = Math.max(this.height(y.left), this.height(y.right)) + 1;
+
+                return y;
+            }
+
+            getBalance(N) {
+                if (N === null)
+                    return 0;
+                return this.height(N.left) - this.height(N.right);
+            }
+
+            insert(node, value) {
+
+                if (node === null)
+                    return (new Node(value));
+
+                if (value < node.value)
+                    node.left = this.insert(node.left, value);
+                else if (value > node.value)
+                    node.right = this.insert(node.right, value);
+                else 
+                    return node;
+
+                node.height = 1 + Math.max(this.height(node.left),
+                        this.height(node.right));
+
+                let balance = this.getBalance(node);
+
+                if (balance > 1 && value < node.left.value)
+                    return this.rightRotate(node);
+
+                if (balance < -1 && value > node.right.value)
+                    return this.leftRotate(node);
+
+                if (balance > 1 && value > node.left.value) {
+                    node.left = this.leftRotate(node.left);
+                    return this.rightRotate(node);
+                }
+
+                if (balance < -1 && value < node.right.value) {
+                    node.right = this.rightRotate(node.right);
+                    return this.leftRotate(node);
+                }
+
+                return node;
+            }
+
+            deleteNode(root, value) {
+
+                if (root === null)
+                    return root;
+
+
+                if (value < root.value)
+                    root.left = this.deleteNode(root.left, value);
+
+                else if (value > root.value)
+                    root.right = this.deleteNode(root.right, value);
+
+                else {
+                    if ((root.left === null) || (root.right === null)) {
+                        let temp = root.left ? root.left : root.right;
+                        
+                        if (temp === null) {
+                            temp = root;
+                            root = null;
+                        } else 
+                            root = temp; 
+                                
+                    } else {
+                        let temp = this.minValueNode(root.right);
+
+                        root.value = temp.value;
+
+                        root.right = this.deleteNode(root.right, temp.value);
+                    }
+                }
+
+                if (root === null)
+                    return root;
+
+                root.height = Math.max(this.height(root.left), this.height(root.right)) + 1;
+
+
+                let balance = this.getBalance(root);
+
+                if (balance > 1 && this.getBalance(root.left) >= 0)
+                    return this.rightRotate(root);
+
+                if (balance > 1 && this.getBalance(root.left) < 0) {
+                    root.left = this.leftRotate(root.left);
+                    return this.rightRotate(root);
+                }
+
+                if (balance < -1 && this.getBalance(root.right) <= 0)
+                    return this.leftRotate(root);
+
+                if (balance < -1 && this.getBalance(root.right) > 0) {
+                    root.right = this.rightRotate(root.right);
+                    return this.leftRotate(root);
+                }
+
+                return root;
+            }
+
+            minValueNode(node) {
+                let current = node;
+
+                while (current.left !== null)
+                    current = current.left;
+
+                return current;
+            }
+
+            find(node, value) {
+                if (node === null)
+                    return null;
+
+                if (value < node.value)
+                    return this.find(node.left, value);
+                else if (value > node.value)
+                    return this.find(node.right, value);
+                else
+                    return node;
+            }
+
+            inOrderTraversal(node, result = []) {
+                if (node !== null) {
+                    this.inOrderTraversal(node.left, result);
+                    result.push(node.value);
+                    this.inOrderTraversal(node.right, result);
+                }
+                return result;
+            }
+
+            insertValue(value) {
+                this.root = this.insert(this.root, value);
+                this.drawTree();
+            }
+
+            deleteValue(value) {
+                this.root = this.deleteNode(this.root, value);
+                this.drawTree();
+            }
+
+            findValue(value) {
+                return this.find(this.root, value);
+            }
+
+            traverseInOrder() {
+                return this.inOrderTraversal(this.root);
+            }
+
+            drawTree() {
+                let canvas = document.getElementById('canvas');
+                let ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                this.drawNode(ctx, this.root, canvas.width / 2, 50, canvas.width / 4);
+            }
+
+            drawNode(ctx, node, x, y, dx) {
+                if (node !== null) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 15, 0, 2 * Math.PI);
+                    ctx.stroke();
+                    ctx.fillText(node.value, x - 5, y + 5);
+
+                    if (node.left !== null) {
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x - dx, y + 50);
+                        ctx.stroke();
+                    }
+
+                    if (node.right !== null) {
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + dx, y + 50);
+                        ctx.stroke();
+                    }
+
+                    this.drawNode(ctx, node.left, x - dx, y + 50, dx / 2);
+                    this.drawNode(ctx, node.right, x + dx, y + 50, dx / 2);
+                }
+            }
+        }
+
+        let avlTree = new AVLTree();
+
+        function init() {
+            $('#insertButton').click(insertNode);
+            $('#deleteButton').click(deleteNode);
+            $('#findButton').click(findNode);
+            $('#traverseButton').click(traverseTree);
+        }
+
+        function insertNode() {
+            let value = parseInt($('#inputValue').val());
+            if (!isNaN(value)) {
+                avlTree.insertValue(value);
+            } else {
+                alert("Por favor, insira um valor numérico válido.");
+            }
+        }
+
+        function deleteNode() {
+            let value = parseInt($('#inputValue').val());
+            if (!isNaN(value)) {
+                avlTree.deleteValue(value);
+            } else {
+                alert("Por favor, insira um valor numérico válido.");
+            }
+        }
+
+        function findNode() {
+            let value = parseInt($('#inputValue').val());
+            if (!isNaN(value)) {
+                let node = avlTree.findValue(value);
+                if (node) {
+                    alert("Valor encontrado: " + node.value);
+                } else {
+                    alert("Valor não encontrado.");
+                }
+            } else {
+                alert("Por favor, insira um valor numérico válido.");
+            }
+        }
+
+        function traverseTree() {
+            let result = avlTree.traverseInOrder();
+            alert("Percurso InOrder: " + result.join(", "));
+        }
+    </script>
+</body>
+</html>
